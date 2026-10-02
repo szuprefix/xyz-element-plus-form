@@ -1,19 +1,27 @@
-import type { BuiltinWidget, FieldChoice, FormField, NormalizedFormField } from './types'
+import type { BuiltinWidget, FieldChangePayload, FieldChoice, FieldChoiceInput, FormField, NormalizedFormField } from './types'
+
+function isChoiceTuple(choice: FieldChoiceInput): choice is readonly [unknown, string] {
+  return Array.isArray(choice)
+}
 
 export function normalizeChoices(choices: FormField['choices'] = []): FieldChoice[] {
+  if (!Array.isArray(choices)) {
+    return Object.entries(choices).map(([value, label]) => ({ value, label }))
+  }
   return choices.map((choice) => {
     if (typeof choice === 'string') return { value: choice, label: choice }
-    if (Array.isArray(choice)) return { value: choice[0], label: choice[1] }
+    if (isChoiceTuple(choice)) return { value: choice[0], label: choice[1] }
     return { ...choice, label: choice.label ?? String(choice.value ?? '') } as FieldChoice
   })
 }
 
 export function inferWidget(field: FormField): BuiltinWidget {
+  const choiceCount = normalizeChoices(field.choices).length
   if (field.readonly || field.read_only) return 'readonly'
   if (field.hidden) return 'hidden'
-  if (field.multiple && field.choices?.length) return 'select'
-  if (field.choices?.length) {
-    return field.choices.length <= 4 ? 'radio' : 'select'
+  if (field.multiple && choiceCount) return 'select'
+  if (choiceCount) {
+    return choiceCount <= 4 ? 'radio' : 'select'
   }
   if (field.type === 'boolean') return 'switch'
   if (['integer', 'number', 'decimal'].includes(field.type ?? '')) return 'number'
@@ -64,4 +72,12 @@ export const createRules = (fields: NormalizedFormField[]) => Object.fromEntries
 export function createInitialValue(fields: NormalizedFormField[], value: Record<string, unknown> = {}) {
   const defaults = Object.fromEntries(fields.filter((field) => field.defaultValue !== undefined).map((field) => [field.name, field.defaultValue]))
   return { ...defaults, ...value }
+}
+
+export function createFieldChangePayload(
+  value: unknown,
+  field: NormalizedFormField,
+  form: Record<string, unknown>,
+): FieldChangePayload {
+  return { value, field, form: { ...form, [field.name]: value } }
 }

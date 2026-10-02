@@ -10,6 +10,7 @@
       :model-value="modelValue"
       :field="field"
       :context="context"
+      :widgets="widgets"
       @update:model-value="$emit('update:modelValue', $event)"
       @change="$emit('change', $event)"
     />
@@ -18,7 +19,7 @@
 
 <script setup lang="ts">
 import Widget from './WidgetRenderer.vue'
-import type { FieldChangePayload, NormalizedFormField } from '../types'
+import type { FieldChangePayload, NormalizedFormField, WidgetRegistry } from '../types'
 
 withDefaults(defineProps<{
   modelValue?: unknown
@@ -26,7 +27,8 @@ withDefaults(defineProps<{
   context: Record<string, unknown>
   error?: string
   noLabel?: boolean
-}>(), { modelValue: undefined, error: undefined, noLabel: false })
+  widgets?: WidgetRegistry
+}>(), { modelValue: undefined, error: undefined, noLabel: false, widgets: () => ({}) })
 
 defineEmits<{
   'update:modelValue': [value: unknown]

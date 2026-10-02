@@ -16,7 +16,7 @@ const fields: FormField[] = [
   { name: 'name', label: '姓名', type: 'string', required: true },
   { name: 'age', label: '年龄', type: 'integer', required: true },
   { name: 'enabled', label: '启用', type: 'boolean' },
-  { name: 'role', label: '角色', choices: ['管理员', '编辑', '访客'] },
+  { name: 'role', label: '角色', choices: {admin:'管理员', editor:'编辑', guest:'访客', man: 'man'} },
   { name: 'birthday', label: '生日', type: 'date' },
   { name: 'description', label: '说明', format: 'textarea', help: '长文本自动占满一行' },
 ]

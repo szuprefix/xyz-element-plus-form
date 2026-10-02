@@ -2,8 +2,12 @@ import type { Component } from 'vue'
 
 export type FieldType = 'string' | 'text' | 'boolean' | 'integer' | 'number' | 'decimal' | 'date' | 'datetime' | 'time' | 'choice'
 export type BuiltinWidget = 'text' | 'textarea' | 'password' | 'number' | 'switch' | 'radio' | 'select' | 'date' | 'datetime' | 'time' | 'readonly' | 'hidden'
+export type WidgetName = BuiltinWidget | (string & {})
+export type WidgetRegistry = Record<string, Component>
 
 export interface FieldChoice<T = unknown> { value: T; label: string; disabled?: boolean }
+export type FieldChoiceInput<T = unknown> = FieldChoice<T> | readonly [T, string] | string
+export type FieldChoices<T = unknown> = FieldChoiceInput<T>[] | Record<string, string>
 
 export interface FormField<T = unknown> {
   name: string
@@ -17,9 +21,9 @@ export interface FormField<T = unknown> {
   disabled?: boolean
   hidden?: boolean
   multiple?: boolean
-  choices?: Array<FieldChoice | [unknown, string] | string>
+  choices?: FieldChoices<T>
   rules?: unknown[]
-  widget?: BuiltinWidget | Component
+  widget?: WidgetName | Component
   widgetProps?: Record<string, unknown>
   span?: number | Record<string, number>
   colSpan?: number
@@ -36,7 +40,7 @@ export interface FormField<T = unknown> {
 
 export interface NormalizedFormField extends Omit<FormField, 'label' | 'widget' | 'choices' | 'rules' | 'span'> {
   label: string
-  widget: BuiltinWidget | Component
+  widget: WidgetName | Component
   choices: FieldChoice[]
   rules: unknown[]
   span: Record<string, number>
@@ -49,4 +53,8 @@ export interface SubmitContext {
   value: Record<string, unknown>
   setErrors: (errors: Record<string, string | string[]>) => void
   clearErrors: () => void
+}
+
+export interface XyzFormPluginOptions {
+  widgets?: WidgetRegistry
 }

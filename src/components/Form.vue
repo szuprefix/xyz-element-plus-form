@@ -7,6 +7,7 @@
     :rules="rules"
     :label-width="noLabel ? '0px' : labelWidth"
     v-bind="$attrs"
+    @submit.prevent="submitForm"
   >
     <slot name="header" :value="formValue" />
 
@@ -22,6 +23,7 @@
               :context="formValue"
               :error="errors[field.name]"
               :no-label="noLabel"
+              :widgets="resolvedWidgets"
               @update:model-value="updateField(field.name, $event)"
               @change="$emit('field-change', $event)"
             />
@@ -32,18 +34,19 @@
 
     <slot name="footer" :value="formValue" :submit="submitForm">
       <el-form-item v-if="submitName">
-        <el-button type="primary" :loading="loading" @click="submitForm">{{ submitName }}</el-button>
+        <el-button native-type="submit" type="primary" :loading="loading">{{ submitName }}</el-button>
       </el-form-item>
     </slot>
   </el-form>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import FormItem from './FormItem.vue'
 import { createInitialValue, createRules, normalizeFields } from '../schema'
-import type { FieldChangePayload, FormField, SubmitContext } from '../types'
+import { widgetRegistryKey } from '../widgets/registry'
+import type { FieldChangePayload, FormField, SubmitContext, WidgetRegistry } from '../types'
 
 defineOptions({ name: 'XyzForm', inheritAttrs: false })
 
@@ -59,6 +62,7 @@ const props = withDefaults(defineProps<{
   noLabel?: boolean
   oneColumn?: boolean
   gutter?: number
+  widgets?: WidgetRegistry
 }>(), {
   modelValue: undefined,
   value: undefined,
@@ -70,6 +74,7 @@ const props = withDefaults(defineProps<{
   noLabel: false,
   oneColumn: false,
   gutter: 16,
+  widgets: () => ({}),
 })
 
 const emit = defineEmits<{
@@ -86,6 +91,8 @@ const formRef = ref()
 const loading = ref(false)
 const loadingText = ref('正在提交')
 const errors = ref<Record<string, string>>({})
+const globalWidgets = inject(widgetRegistryKey, {})
+const resolvedWidgets = computed(() => ({ ...globalWidgets, ...props.widgets }))
 const normalizedFields = computed(() => normalizeFields(props.items))
 const rules = computed(() => createRules(normalizedFields.value))
 const formValue = ref<Record<string, unknown>>({})
@@ -105,6 +112,10 @@ function publish(value: Record<string, unknown>) {
 }
 
 function updateField(name: string, value: unknown) {
+  if (errors.value[name]) {
+    const { [name]: _resolvedError, ...remainingErrors } = errors.value
+    errors.value = remainingErrors
+  }
   publish({ ...formValue.value, [name]: value })
 }
 
@@ -123,6 +134,7 @@ async function validate() {
 }
 
 async function submitForm() {
+  if (loading.value) return false
   clearErrors()
   try {
     await validate()

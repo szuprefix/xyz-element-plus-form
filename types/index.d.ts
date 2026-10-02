@@ -2,7 +2,11 @@ import type { App, Component, DefineComponent, Plugin } from 'vue'
 
 export type FieldType = 'string' | 'text' | 'boolean' | 'integer' | 'number' | 'decimal' | 'date' | 'datetime' | 'time' | 'choice'
 export type BuiltinWidget = 'text' | 'textarea' | 'password' | 'number' | 'switch' | 'radio' | 'select' | 'date' | 'datetime' | 'time' | 'readonly' | 'hidden'
+export type WidgetName = BuiltinWidget | (string & {})
+export type WidgetRegistry = Record<string, Component>
 export interface FieldChoice<T = unknown> { value: T; label: string; disabled?: boolean }
+export type FieldChoiceInput<T = unknown> = FieldChoice<T> | readonly [T, string] | string
+export type FieldChoices<T = unknown> = FieldChoiceInput<T>[] | Record<string, string>
 export interface FormField<T = unknown> {
   name: string
   label?: string
@@ -15,9 +19,9 @@ export interface FormField<T = unknown> {
   disabled?: boolean
   hidden?: boolean
   multiple?: boolean
-  choices?: Array<FieldChoice | [unknown, string] | string>
+  choices?: FieldChoices<T>
   rules?: unknown[]
-  widget?: BuiltinWidget | Component
+  widget?: WidgetName | Component
   widgetProps?: Record<string, unknown>
   span?: number | Record<string, number>
   colSpan?: number
@@ -33,7 +37,7 @@ export interface FormField<T = unknown> {
 }
 export interface NormalizedFormField extends Omit<FormField, 'label' | 'widget' | 'choices' | 'rules' | 'span'> {
   label: string
-  widget: BuiltinWidget | Component
+  widget: WidgetName | Component
   choices: FieldChoice[]
   rules: unknown[]
   span: Record<string, number>
@@ -46,6 +50,9 @@ export interface SubmitContext {
   setErrors(errors: Record<string, string | string[]>): void
   clearErrors(): void
 }
+export interface XyzFormPluginOptions {
+  widgets?: WidgetRegistry
+}
 export interface XyzFormProps {
   modelValue?: Record<string, unknown>
   value?: Record<string, unknown>
@@ -57,6 +64,7 @@ export interface XyzFormProps {
   noLabel?: boolean
   oneColumn?: boolean
   gutter?: number
+  widgets?: WidgetRegistry
 }
 
 export const XyzForm: DefineComponent<XyzFormProps>
@@ -68,6 +76,9 @@ export function normalizeField(field: FormField): NormalizedFormField
 export function normalizeFields(fields?: FormField[]): NormalizedFormField[]
 export function createRules(fields: NormalizedFormField[]): Record<string, unknown[]>
 export function createInitialValue(fields: NormalizedFormField[], value?: Record<string, unknown>): Record<string, unknown>
-export function install(app: App): void
-declare const plugin: Plugin
+export function createFieldChangePayload(value: unknown, field: NormalizedFormField, form: Record<string, unknown>): FieldChangePayload
+export const builtinWidgets: Readonly<WidgetRegistry>
+export function resolveWidget(widget: string | Component, registry?: WidgetRegistry): Component | undefined
+export function install(app: App, options?: XyzFormPluginOptions): void
+declare const plugin: Plugin<[options?: XyzFormPluginOptions]>
 export default plugin
